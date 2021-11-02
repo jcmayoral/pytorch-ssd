@@ -179,6 +179,7 @@ def test(loader, net, criterion, device):
         boxes = boxes.to(device)
         labels = labels.to(device)
         num += 1
+        print (images.shapes, labels)
 
         with torch.no_grad():
             confidence, locations = net(images)

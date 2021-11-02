@@ -7,6 +7,8 @@ import cv2
 import numpy as np
 import types
 from numpy import random
+import warnings
+warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning)
 
 
 def intersect(box_a, box_b):
@@ -28,11 +30,13 @@ def jaccard_numpy(box_a, box_b):
         jaccard overlap: Shape: [box_a.shape[0], box_a.shape[1]]
     """
     inter = intersect(box_a, box_b)
-    area_a = ((box_a[:, 2]-box_a[:, 0]) *
-              (box_a[:, 3]-box_a[:, 1]))  # [A,B]
-    area_b = ((box_b[2]-box_b[0]) *
-              (box_b[3]-box_b[1]))  # [A,B]
+    area_a = ((int(box_a[:, 2])-int(box_a[:, 0])) *
+              (int(box_a[:, 3])-int(box_a[:, 1])))  # [A,B]
+    area_b = ((int(box_b[2])-int(box_b[0])) *
+              (int(box_b[3])-int(box_b[1])))  # [A,B]
     union = area_a + area_b - inter
+    print(box_a, box_b)
+    print(area_a, area_b, inter, union)
     return inter / union  # [A,B]
 
 
