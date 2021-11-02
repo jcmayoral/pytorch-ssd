@@ -6,7 +6,7 @@ import cv2
 import os
 
 
-class VOCDataset:
+class YOLODataset:
 
     def __init__(self, root, transform=None, target_transform=None, is_test=False, keep_difficult=False, label_file=None):
         """Dataset for VOC data.
@@ -21,7 +21,7 @@ class VOCDataset:
             image_sets_file = self.root / "ImageSets/Main/test.txt"
         else:
             image_sets_file = self.root / "ImageSets/Main/trainval.txt"
-        self.ids = VOCDataset._read_image_ids(image_sets_file)
+        self.ids = YOLODataset._read_image_ids(image_sets_file)
         self.keep_difficult = keep_difficult
 
         # if the labels file exists, read in the class names

@@ -243,6 +243,9 @@ if __name__ == '__main__':
     if args.dataset_type == "voc":
         val_dataset = VOCDataset(args.validation_dataset, transform=test_transform,
                                  target_transform=target_transform, is_test=True)
+    elif args.dataset_type == "yolo":
+        val_dataset = YOLODataset(args.validation_dataset, transform=test_transform,
+                                 target_transform=target_transform, is_test=True)
     elif args.dataset_type == 'open_images':
         val_dataset = OpenImagesDataset(dataset_path,
                                         transform=test_transform, target_transform=target_transform,
