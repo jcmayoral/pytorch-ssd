@@ -212,12 +212,12 @@ if __name__ == '__main__':
                                  target_transform=target_transform)
             label_file = os.path.join(args.checkpoint_folder, "voc-model-labels.txt")
             store_labels(label_file, dataset.class_names)
-            num_classes = 4#len(dataset.class_names)
+            num_classes = len(dataset.class_names)
             print("NUM_CLASSES", num_classes)
         elif args.dataset_type == 'yolo':
             dataset = YOLODataset(dataset_path, transform=train_transform,
                                  target_transform=target_transform)
-            label_file = os.path.join(args.checkpoint_folder, "voc-model-labels.txt")
+            label_file = os.path.join(args.checkpoint_folder, "yolo-model-labels.txt")
             store_labels(label_file, dataset.class_names)
             num_classes = 4#len(dataset.class_names)
             print("NUM_CLASSES", num_classes)
