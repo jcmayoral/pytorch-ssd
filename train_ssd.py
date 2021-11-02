@@ -4,6 +4,9 @@ import logging
 import sys
 import itertools
 
+
+from tensorboardX import SummaryWriter
+
 import torch
 from torch.utils.data import DataLoader, ConcatDataset
 from torch.optim.lr_scheduler import CosineAnnealingLR, MultiStepLR
@@ -108,12 +111,22 @@ if args.use_cuda and torch.cuda.is_available():
     torch.backends.cudnn.benchmark = True
     logging.info("Use Cuda.")
 
+writer = SummaryWriter(log_dir="runs",
+                       filename_suffix=f'fnet{args.net}_dataset_type_{args.dataset_type}_batch{args.batch_size}')
 
-def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
+
+def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1, start_counter=0):
+    print ("start counter ", start_counter)
     net.train(True)
     running_loss = 0.0
     running_regression_loss = 0.0
     running_classification_loss = 0.0
+
+    #TODO
+    epoch_loss = 0.0
+    epoch_regression_loss = 0.0
+    epoch_classification_loss = 0.0
+
     for i, data in enumerate(loader):
         images, boxes, labels = data
         images = images.to(device)
@@ -143,6 +156,15 @@ def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
             running_loss = 0.0
             running_regression_loss = 0.0
             running_classification_loss = 0.0
+            writer.add_scalar('train/avg_steps_loss', avg_reg_loss, start_counter+i)
+            writer.add_scalar('train/avg_steps_reg_loss', avg_reg_loss, start_counter+i)
+            writer.add_scalar('train/avg_steps_clf_loss', avg_clf_loss, start_counter+i)
+
+    #For now last debug_step is epoch loss HACK
+    writer.add_scalar('train/avg_loss', avg_loss, epoch)
+    writer.add_scalar('train/avg_reg_loss', avg_reg_loss, epoch)
+    writer.add_scalar('train/avg_clf_loss', avg_clf_loss, epoch)
+
 
 
 def test(loader, net, criterion, device):
@@ -334,7 +356,7 @@ if __name__ == '__main__':
     logging.info(f"Start training from epoch {last_epoch + 1}.")
     for epoch in range(last_epoch + 1, args.num_epochs):
         train(train_loader, net, criterion, optimizer,
-              device=DEVICE, debug_steps=args.debug_steps, epoch=epoch)
+              device=DEVICE, debug_steps=args.debug_steps, epoch=epoch, start_counter=epoch*len(train_dataset)/args.batch_size)
         scheduler.step()
 
         if epoch % args.validation_epochs == 0 or epoch == args.num_epochs - 1:
@@ -345,6 +367,11 @@ if __name__ == '__main__':
                 f"Validation Regression Loss {val_regression_loss:.4f}, " +
                 f"Validation Classification Loss: {val_classification_loss:.4f}"
             )
+
+            writer.add_scalar('validation/avg_loss', val_loss, epoch)
+            writer.add_scalar('validation/avg_reg_loss', val_regression_loss, epoch)
+            writer.add_scalar('validation/avg_clf_loss', val_classification_loss, epoch)
+
             model_path = os.path.join(args.checkpoint_folder, f"{args.net}-Epoch-{epoch}-Loss-{val_loss}.pth")
             net.save(model_path)
             logging.info(f"Saved model {model_path}")
