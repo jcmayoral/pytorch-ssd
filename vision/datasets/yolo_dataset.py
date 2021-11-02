@@ -43,12 +43,11 @@ class YOLODataset:
 
     def __getitem__(self, index):
         image_id = self.ids[index]
-        boxes, labels, is_difficult = self._get_annotation(image_id)
+        image = self._read_image(image_id)
+        boxes, labels, is_difficult = self._get_annotation(image_id, image.shape)
         if not self.keep_difficult:
             boxes = boxes[is_difficult == 0]
             labels = labels[is_difficult == 0]
-        image = self._read_image(image_id)
-        print ("LABELS ", labels)
         if self.transform:
             image, boxes, labels = self.transform(image, boxes, labels)
         if self.target_transform:
@@ -63,7 +62,9 @@ class YOLODataset:
         return image
 
     def get_annotation(self, index):
+        print ("INDEX",index)
         image_id = self.ids[index]
+        print (image_id, "Annotation")
         return image_id, self._get_annotation(image_id)
 
     def __len__(self):
@@ -75,42 +76,58 @@ class YOLODataset:
         print(image_sets_file)
         with open(image_sets_file) as f:
             for line in f:
-                print (line)
                 ids.append(line.rstrip())
         return ids
 
-    def _get_annotation(self, image_id):
-        annotation_file = self.root / f"Annotations/{image_id}.xml"
-        objects = ET.parse(annotation_file).findall("object")
-        boxes = []
+    def _get_annotation(self, image_id, image_size):
+        annotation_file = image_id.replace('jpg','txt')
+        #objects = ET.parse(annotation_file).findall("object")
+        boxes = []                #x->width y->height
         labels = []
         is_difficult = []
-        for object in objects:
-            class_name = object.find('name').text.lower().strip()
-            print ("NOTE TO YOU... remember the hack to test if this works\n")
-            class_name = 'S0'
-            # we're only concerned with clases in our list
-            if class_name in self.class_dict:
-                bbox = object.find('bndbox')
+        height, width, channels = image_size
 
-                # VOC dataset format follows Matlab, in which indexes start from 0
-                x1 = float(bbox.find('xmin').text) - 1
-                y1 = float(bbox.find('ymin').text) - 1
-                x2 = float(bbox.find('xmax').text) - 1
-                y2 = float(bbox.find('ymax').text) - 1
+        with open(annotation_file,'r') as objects:
+            for object in objects:
+                objectr = object.split()
+                class_name = int(objectr[0])#object.find('name').text.lower().strip()
+                #bbox = object.find('bndbox')
+                cx1, cy1, cwidth, cheight  =  [float(i) for i in objectr[1:]]
+                x1 = int(width * (cx1 - cwidth/2))
+                y1 = int(height * (cy1 - cheight/2))
+                x2 = int(width * (cx1 + cwidth/2))
+                y2 = int(height * (cy1 - cheight/2))
+
+                if (x1 > width) or (y1>height):
+                    print ("objectr ", objectr)
+                    print (annotation_file, objectr)
+                    print (x2, width, cwidth)
+                    print (y2, height, cheight)
+                    print ("AAAAAAAAAA")
+
+                if (x2 > width) or (y2>height):
+                    print ("objectr ", objectr)
+                    print (annotation_file, objectr)
+                    print (x2, width, cwidth)
+                    print (y2, height, cheight)
+                    print ("BBBBBBBBBBb")
+
+                #x->width y->height xmin,ymin
+                #FOLLOWING VOC as the
+                x1 = int(np.rint((cx1 - cwidth/2)*width))
+                y1 = int(np.rint((cy1 - cheight/2)*height))
+                x2 = int(np.rint((cx1 + cwidth/2)*width))
+                y2 = int(np.rint((cy1 + cheight/2)*height))
                 boxes.append([x1, y1, x2, y2])
-                print(self.class_dict[class_name],"\n")
-                print ("B")
                 labels.append(self.class_dict[class_name])
-                is_difficult_str = object.find('difficult').text
+                is_difficult_str = None #object.find('difficult').text
                 is_difficult.append(int(is_difficult_str) if is_difficult_str else 0)
 
         return (np.array(boxes, dtype=np.float32),
                 np.array(labels, dtype=np.int64),
                 np.array(is_difficult, dtype=np.uint8))
 
-    def _read_image(self, image_id):
-        image_file = self.root / f"JPEGImages/{image_id}.jpg"
+    def _read_image(self, image_file):
         image = cv2.imread(str(image_file))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         return image
