@@ -23,7 +23,8 @@ def SeperableConv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=
 
 def create_mobilenetv2_ssd_lite(num_classes, width_mult=1.0, use_batch_norm=True, onnx_compatible=False, is_test=False):
     base_net = MobileNetV2(width_mult=width_mult, use_batch_norm=use_batch_norm,
-                           onnx_compatible=onnx_compatible).features
+            onnx_compatible=onnx_compatible).to("cuda:0").features
+    print("A")
 
     source_layer_indexes = [
         GraphPath(14, 'conv', 3),
@@ -54,9 +55,10 @@ def create_mobilenetv2_ssd_lite(num_classes, width_mult=1.0, use_batch_norm=True
         SeperableConv2d(in_channels=256, out_channels=6 * num_classes, kernel_size=3, padding=1),
         Conv2d(in_channels=64, out_channels=6 * num_classes, kernel_size=1),
     ])
+    print("BB")
 
     return SSD(num_classes, base_net, source_layer_indexes,
-               extras, classification_headers, regression_headers, is_test=is_test, config=config)
+               extras, classification_headers, regression_headers, is_test=is_test, config=config, device="cpu")
 
 
 def create_mobilenetv2_ssd_lite_predictor(net, candidate_size=200, nms_method=None, sigma=0.5, device=torch.device('cpu')):
