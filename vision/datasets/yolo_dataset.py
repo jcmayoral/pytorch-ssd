@@ -5,56 +5,40 @@ import xml.etree.ElementTree as ET
 import cv2
 import os
 
+def parse_data(datafile):
+    mydict = dict()
+    with open(datafile,'r') as f:
+        for line in f:
+            key, value = line.split("=")
+            if key and value:
+                mydict[key]=value
+    return mydict
+
+
 
 class YOLODataset:
 
     def __init__(self, root, transform=None, target_transform=None, is_test=False, keep_difficult=False, label_file=None):
-        """Dataset for VOC data.
+        """Dataset for YOLO data.
         Args:
-            root: the root of the VOC2007 or VOC2012 dataset, the directory contains the following sub-directories:
-                Annotations, ImageSets, JPEGImages, SegmentationClass, SegmentationObject.
+            root: the root of the YOLO dataset, the directory must contain a data file.
         """
         self.root = pathlib.Path(root)
         self.transform = transform
         self.target_transform = target_transform
+        dict_data = parse_data(root)
         if is_test:
-            image_sets_file = self.root / "ImageSets/Main/test.txt"
+            image_sets_file = dict_data['valid'].strip()
         else:
-            image_sets_file = self.root / "ImageSets/Main/trainval.txt"
+            image_sets_file = dict_data['train'].strip()
+
+
+        #This are actually files names
         self.ids = YOLODataset._read_image_ids(image_sets_file)
         self.keep_difficult = keep_difficult
 
-        # if the labels file exists, read in the class names
-        label_file_name = self.root / "labels.txt"
-
-        if os.path.isfile(label_file_name):
-            class_string = ""
-            with open(label_file_name, 'r') as infile:
-                for line in infile:
-                    class_string += line.rstrip()
-
-            # classes should be a comma separated list
-
-            classes = class_string.split(',')
-            # prepend BACKGROUND as first class
-            classes.insert(0, 'BACKGROUND')
-            classes  = [ elem.replace(" ", "") for elem in classes]
-            self.class_names = tuple(classes)
-            logging.info("VOC Labels read from file: " + str(self.class_names))
-
-        else:
-            logging.info("No labels file, using default VOC classes.")
-            self.class_names = ('BACKGROUND',
-            'aeroplane', 'bicycle', 'bird', 'boat',
-            'bottle', 'bus', 'car', 'cat', 'chair',
-            'cow', 'diningtable', 'dog', 'horse',
-            'motorbike', 'person', 'pottedplant',
-            'sheep', 'sofa', 'train', 'tvmonitor')
-            print ("HACK TO 4 classes")
-            self.class_names = {'S0', 'S1', 'S2', 'S3'}
-
-
-        self.class_dict = {class_name: i for i, class_name in enumerate(self.class_names)}
+        self.class_names = {'0', '1', '2', '3'}
+        self.class_dict = {i: int(i) for i, class_name in enumerate(self.class_names)}
         print ("CLASS DICT " , self.class_dict)
 
     def __getitem__(self, index):
@@ -88,8 +72,10 @@ class YOLODataset:
     @staticmethod
     def _read_image_ids(image_sets_file):
         ids = []
+        print(image_sets_file)
         with open(image_sets_file) as f:
             for line in f:
+                print (line)
                 ids.append(line.rstrip())
         return ids
 
