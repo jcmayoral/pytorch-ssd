@@ -18,8 +18,12 @@ class Predictor:
         self.sigma = sigma
         if device:
             self.device = device
+            print (device,"A")
         else:
+            print (device)
             self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+        print ("DEVICE ", self.device)
 
         self.net.to(self.device)
         self.net.eval()
@@ -27,7 +31,7 @@ class Predictor:
         self.timer = Timer()
 
     def predict(self, image, top_k=-1, prob_threshold=None):
-        cpu_device = torch.device("cpu")
+        cpu_device = torch.device(self.device)
         height, width, _ = image.shape
         image = self.transform(image)
         images = image.unsqueeze(0)

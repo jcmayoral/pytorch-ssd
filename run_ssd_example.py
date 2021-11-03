@@ -5,6 +5,7 @@ from vision.ssd.squeezenet_ssd_lite import create_squeezenet_ssd_lite, create_sq
 from vision.ssd.mobilenet_v2_ssd_lite import create_mobilenetv2_ssd_lite, create_mobilenetv2_ssd_lite_predictor
 from vision.ssd.mobilenetv3_ssd_lite import create_mobilenetv3_large_ssd_lite, create_mobilenetv3_small_ssd_lite
 from vision.utils.misc import Timer
+import torch
 import cv2
 import sys
 
@@ -45,7 +46,7 @@ elif net_type == 'mb1-ssd':
 elif net_type == 'mb1-ssd-lite':
     predictor = create_mobilenetv1_ssd_lite_predictor(net, candidate_size=200)
 elif net_type == 'mb2-ssd-lite' or net_type == "mb3-large-ssd-lite" or net_type == "mb3-small-ssd-lite":
-    predictor = create_mobilenetv2_ssd_lite_predictor(net, candidate_size=200)
+    predictor = create_mobilenetv2_ssd_lite_predictor(net, candidate_size=200, device="cuda:0")
 elif net_type == 'sq-ssd-lite':
     predictor = create_squeezenet_ssd_lite_predictor(net, candidate_size=200)
 else:
@@ -53,15 +54,17 @@ else:
 
 orig_image = cv2.imread(image_path)
 image = cv2.cvtColor(orig_image, cv2.COLOR_BGR2RGB)
+#image = torch.from_numpy(image).to("cuda")
 boxes, labels, probs = predictor.predict(image, 10, 0.4)
 
 for i in range(boxes.size(0)):
     box = boxes[i, :]
-    cv2.rectangle(orig_image, (box[0], box[1]), (box[2], box[3]), (255, 255, 0), 4)
+    print("o", boxes[i])
+    cv2.rectangle(orig_image, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), (255, 255, 0), 4)
     #label = f"""{voc_dataset.class_names[labels[i]]}: {probs[i]:.2f}"""
     label = f"{class_names[labels[i]]}: {probs[i]:.2f}"
     cv2.putText(orig_image, label,
-                (box[0] + 20, box[1] + 40),
+                (int(box[0]) + 20, int(box[1]) + 40),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 1,  # font scale
                 (255, 0, 255),
